@@ -3,7 +3,6 @@
 
 namespace WinTail
 {
-    #region Program
     class Program
     {
         public static ActorSystem MyActorSystem;
@@ -11,7 +10,7 @@ namespace WinTail
         static void Main(string[] args)
         {
             // initialize MyActorSystem
-            // YOU NEED TO FILL IN HERE
+            MyActorSystem = ActorSystem.Create("MyActorSystem");
 
             PrintInstructions();
 
@@ -19,10 +18,12 @@ namespace WinTail
             //YOU NEED TO FILL IN HERE
             // make consoleWriterActor using these props: Props.Create(() => new ConsoleWriterActor())
             // make consoleReaderActor using these props: Props.Create(() => new ConsoleReaderActor(consoleWriterActor))
+            var consoleWriterActor = MyActorSystem.ActorOf(Props.Create(() => new ConsoleWriterActor()));
+            var consoleReaderActor = MyActorSystem.ActorOf(Props.Create(() => new ConsoleReaderActor(consoleWriterActor)));
 
 
             // tell console reader to begin
-            //YOU NEED TO FILL IN HERE
+            consoleReaderActor.Tell("start");
 
             // blocks the main thread from exiting until the actor system is shut down
             MyActorSystem.AwaitTermination();
@@ -44,5 +45,4 @@ namespace WinTail
             Console.WriteLine("Type 'exit' to quit this application at any time.\n");
         }
     }
-    #endregion
 }
