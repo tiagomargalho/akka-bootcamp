@@ -43,17 +43,15 @@ namespace WinTail
             {
                 // shut down the system (acquire handle to system via
                 // this actors context)
-                Context.System.Shutdown();
+                Context.System.Terminate();
                 return;
             }
             else
             {
                 if (IsValid(message))
                 {
-                    // send input to the console writer to process and print
                     _consoleWriterActor.Tell(new Messages.Success.InputSuccess("Thank you! Message was valid."));
 
-                    // continue reading messages from the console
                     Self.Tell(new Messages.Neutral.ContinueProcessing());
                 }
                 else
