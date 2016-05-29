@@ -11,11 +11,11 @@ namespace WinTail
     {
         public const string StartCommand = "start";
         public const string ExitCommand = "exit";
-        private IActorRef _consoleWriterActor;
+        private readonly IActorRef _validationActor;
 
-        public ConsoleReaderActor(IActorRef consoleWriterActor)
+        public ConsoleReaderActor(IActorRef validatonActor)
         {
-            _consoleWriterActor = consoleWriterActor;
+            _validationActor = validatonActor;
         }
 
         protected override void OnReceive(object message)
@@ -24,10 +24,6 @@ namespace WinTail
             {
                 DoPrintInstructions();
             }
-            else if (message is Messages.Error.InputError)
-            {
-                _consoleWriterActor.Tell(message as Messages.Error.InputError);
-            }
 
             GetAndValidateInput();
         }
@@ -35,30 +31,15 @@ namespace WinTail
         private void GetAndValidateInput()
         {
             var message = Console.ReadLine();
-            if (string.IsNullOrWhiteSpace(message))
-            {
-                Self.Tell(new Messages.Error.NullInputError("No input received."));
-            }
-            else if (!string.IsNullOrEmpty(message) && String.Equals(message, ExitCommand, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(message) && String.Equals(message, ExitCommand, StringComparison.OrdinalIgnoreCase))
             {
                 // shut down the system (acquire handle to system via
                 // this actors context)
                 Context.System.Terminate();
                 return;
             }
-            else
-            {
-                if (IsValid(message))
-                {
-                    _consoleWriterActor.Tell(new Messages.Success.InputSuccess("Thank you! Message was valid."));
 
-                    Self.Tell(new Messages.Neutral.ContinueProcessing());
-                }
-                else
-                {
-                    Self.Tell(new Messages.Error.ValidationError("Invalid: input had odd number of characters."));
-                }
-            }
+            _validationActor.Tell(message);
         }
 
         private void DoPrintInstructions()
@@ -66,11 +47,6 @@ namespace WinTail
             Console.WriteLine("Write whatever you want into the console!");
             Console.WriteLine("Some entries will pass validation, and some won't...\n\n");
             Console.WriteLine("Type 'exit' to quit this application at any time.\n");
-        }
-
-        private bool IsValid(string message)
-        {
-            return message.Length % 2 == 0;
         }
     }
 }
