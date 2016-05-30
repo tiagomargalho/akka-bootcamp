@@ -84,7 +84,6 @@ namespace GithubActors.Actors
                       // query succeeded
                       return new StarredReposForUser(starrer, tr.Result);
                   }).PipeTo(sender);
-
             });
 
             // query all starrers for a repository
@@ -103,7 +102,6 @@ namespace GithubActors.Actors
                             return query.NextTry();
                         return tr.Result.ToArray();
                     }).PipeTo(sender);
-
             });
         }
     }

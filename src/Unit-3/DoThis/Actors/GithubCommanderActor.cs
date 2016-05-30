@@ -48,6 +48,7 @@ namespace GithubActors.Actors
         private IActorRef _coordinator;
         private IActorRef _canAcceptJobSender;
         private int pendingJobReplies;
+        private RepoKey _repoJob;
 
         public GithubCommanderActor()
         {
@@ -77,7 +78,7 @@ namespace GithubActors.Actors
             Receive<CanAcceptJob>(job =>
             {
                 _coordinator.Tell(job);
-
+                _repoJob = job.Repo;
                 BecomeAsking();
             });
         }
@@ -85,12 +86,21 @@ namespace GithubActors.Actors
         private void BecomeAsking()
         {
             _canAcceptJobSender = Sender;
-            pendingJobReplies = _coordinator.Ask<Routees>(new GetRoutees()).Result.Members.Count();
+            pendingJobReplies = _coordinator.Ask<Routees>(new GetRoutees())
+                .Result.Members.Count();
             Become(Asking);
+
+            Context.SetReceiveTimeout(TimeSpan.FromSeconds(3));
         }
 
         private void Asking()
         {
+            Receive<ReceiveTimeout>(timeout =>
+            {
+                _canAcceptJobSender.Tell(new UnableToAcceptJob(_repoJob));
+                BecomeReady();
+            });
+
             // stash any subsequent requests
             Receive<CanAcceptJob>(job => Stash.Stash());
 
@@ -123,6 +133,9 @@ namespace GithubActors.Actors
         {
             Become(Ready);
             Stash.UnstashAll();
+
+            // cancel ReceiveTimeout
+            Context.SetReceiveTimeout(null);
         }
     }
 }
